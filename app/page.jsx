@@ -2917,7 +2917,9 @@ export default function HomePage() {
               <UpdateIcon width="14" height="14" />
             </div>
           )}
-          <img alt="项目Github地址" src={githubImg.src} style={{ width: '30px', height: '30px', cursor: 'pointer' }} onClick={() => window.open("https://github.com/zhengshengning/fund-baby")} />
+          <a href="https://github.com/axiao11aa" target="_blank" rel="noopener noreferrer" aria-label="打开 axiao11aa 的 GitHub 主页" title="我的 GitHub 主页" style={{ display: 'flex' }}>
+            <img alt="GitHub" src={githubImg.src} style={{ width: '30px', height: '30px' }} />
+          </a>
           <button
             className="icon-button"
             onClick={toggleTheme}
