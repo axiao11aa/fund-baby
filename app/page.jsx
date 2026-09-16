@@ -7,6 +7,9 @@ import { glass } from '@dicebear/collection';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import ModalBackdrop from "./components/ModalBackdrop";
+import FundDataStatus from "./components/FundDataStatus";
+import { getHoldingProfit as calculateHoldingProfit } from "./lib/holding-profit.js";
 import Announcement from "./components/Announcement";
 import FundTrendChart from "./components/FundTrendChart";
 import FundIntradayChart from "./components/FundIntradayChart";
@@ -62,7 +65,7 @@ function FeedbackModal({ onClose, user, onOpenWeChat }) {
   };
 
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -165,13 +168,13 @@ function FeedbackModal({ onClose, user, onOpenWeChat }) {
           </form>
         )}
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
 function WeChatModal({ onClose }) {
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -205,13 +208,13 @@ function WeChatModal({ onClose }) {
             扫码加入群聊，获取最新更新与交流
         </p>
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
 function HoldingActionModal({ fund, onClose, onAction }) {
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -245,10 +248,10 @@ function HoldingActionModal({ fund, onClose, onAction }) {
         </div>
 
         <div className="grid" style={{ gap: 12 }}>
-          <button className="button col-6" onClick={() => onAction('buy')} style={{ background: 'rgba(34, 211, 238, 0.1)', border: '1px solid var(--primary)', color: 'var(--primary)' }}>
+          <button className="button col-6" onClick={() => onAction('buy')} style={{ gridColumn: 'span 6', background: 'rgba(34, 211, 238, 0.1)', border: '1px solid var(--primary)', color: 'var(--primary)' }}>
             加仓
           </button>
-          <button className="button col-6" onClick={() => onAction('sell')} style={{ background: 'rgba(248, 113, 113, 0.1)', border: '1px solid var(--danger)', color: 'var(--danger)' }}>
+          <button className="button col-6" onClick={() => onAction('sell')} style={{ gridColumn: 'span 6', background: 'rgba(248, 113, 113, 0.1)', border: '1px solid var(--danger)', color: 'var(--danger)' }}>
             减仓
           </button>
           <button className="button col-12" onClick={() => onAction('edit')} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text)' }}>
@@ -269,13 +272,13 @@ function HoldingActionModal({ fund, onClose, onAction }) {
           </button>
         </div>
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
 function TopStocksModal({ fund, onClose }) {
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -332,7 +335,7 @@ function TopStocksModal({ fund, onClose }) {
           <button className="button" onClick={onClose} style={{ width: '100%' }}>关闭</button>
         </div>
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
@@ -465,7 +468,7 @@ function TradeModal({ type, fund, holding, onClose, onConfirm, pendingTrades = [
   const [revokeTrade, setRevokeTrade] = useState(null);
 
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -1004,7 +1007,7 @@ function TradeModal({ type, fund, holding, onClose, onConfirm, pendingTrades = [
           />
         )}
       </AnimatePresence>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
@@ -1100,7 +1103,7 @@ function HoldingEditModal({ fund, holding, onClose, onSave }) {
     : (amount && !isNaN(amount) && (!profit || !isNaN(profit)) && dwjz > 0);
 
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -1246,13 +1249,13 @@ function HoldingEditModal({ fund, holding, onClose, onSave }) {
           </div>
         </form>
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
 function AddResultModal({ failures, onClose }) {
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -1295,13 +1298,13 @@ function AddResultModal({ failures, onClose }) {
           <button className="button" onClick={onClose}>知道了</button>
         </div>
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
 function SuccessModal({ message, onClose }) {
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -1327,14 +1330,14 @@ function SuccessModal({ message, onClose }) {
           </button>
         </div>
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
 function CloudConfigModal({ onConfirm, onCancel, type = 'empty' }) {
   const isConflict = type === 'conflict';
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -1377,13 +1380,13 @@ function CloudConfigModal({ onConfirm, onCancel, type = 'empty' }) {
           </button>
         </div>
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
 function ConfirmModal({ title, message, onConfirm, onCancel, confirmText = "确定删除" }) {
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -1416,7 +1419,7 @@ function ConfirmModal({ title, message, onConfirm, onCancel, confirmText = "确�
           <button className="button danger" onClick={onConfirm} style={{ flex: 1 }}>{confirmText}</button>
         </div>
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
@@ -1471,7 +1474,7 @@ function GroupManageModal({ groups, onClose, onSave }) {
   const isAllValid = items.every(it => it.name.trim() !== '');
 
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -1605,7 +1608,7 @@ function GroupManageModal({ groups, onClose, onSave }) {
           />
         )}
       </AnimatePresence>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
@@ -1625,7 +1628,7 @@ function AddFundToGroupModal({ allFunds, currentGroupCodes, onClose, onAdd }) {
   };
 
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -1691,14 +1694,14 @@ function AddFundToGroupModal({ allFunds, currentGroupCodes, onClose, onAdd }) {
           </button>
         </div>
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
 function GroupModal({ onClose, onConfirm }) {
   const [name, setName] = useState('');
   return (
-    <motion.div
+    <ModalBackdrop
       className="modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -1747,7 +1750,7 @@ function GroupModal({ onClose, onConfirm }) {
           <button className="button" onClick={() => name.trim() && onConfirm(name.trim())} disabled={!name.trim()} style={{ flex: 1 }}>确定</button>
         </div>
       </motion.div>
-    </motion.div>
+    </ModalBackdrop>
   );
 }
 
@@ -1814,15 +1817,17 @@ function GroupSummary({ funds, holdings, groupName, getProfit }) {
     let totalHoldingReturn = 0;
     let totalCost = 0;
     let hasHolding = false;
+    let hasMissingTodayProfit = false;
 
     funds.forEach(fund => {
       const holding = holdings[fund.code];
       const profit = getProfit(fund, holding);
+      if (holding?.share > 0 && profit?.profitToday == null) hasMissingTodayProfit = true;
 
       if (profit) {
         hasHolding = true;
         totalAsset += profit.amount;
-        totalProfitToday += profit.profitToday;
+        if (profit.profitToday !== null) totalProfitToday += profit.profitToday;
         if (profit.profitTotal !== null) {
           totalHoldingReturn += profit.profitTotal;
           if (holding && typeof holding.cost === 'number' && typeof holding.share === 'number') {
@@ -1834,7 +1839,7 @@ function GroupSummary({ funds, holdings, groupName, getProfit }) {
 
     const returnRate = totalCost > 0 ? (totalHoldingReturn / totalCost) * 100 : 0;
 
-    return { totalAsset, totalProfitToday, totalHoldingReturn, hasHolding, returnRate };
+    return { totalAsset, totalProfitToday: hasMissingTodayProfit ? null : totalProfitToday, totalHoldingReturn, hasHolding, returnRate };
   }, [funds, holdings, getProfit]);
 
   useLayoutEffect(() => {
@@ -1909,7 +1914,9 @@ function GroupSummary({ funds, holdings, groupName, getProfit }) {
               ) : (
                 <>
                   <span style={{ marginRight: 1 }}>{summary.totalProfitToday > 0 ? '+' : summary.totalProfitToday < 0 ? '-' : ''}</span>
-                  <CountUp value={Math.abs(summary.totalProfitToday)} style={{ fontSize: metricSize }} />
+                  {summary.totalProfitToday === null
+                    ? <span title="部分持仓暂无今日数据" style={{ fontSize: metricSize }}>—</span>
+                    : <CountUp value={Math.abs(summary.totalProfitToday)} style={{ fontSize: metricSize }} />}
                 </>
               )}
             </div>
@@ -2146,7 +2153,7 @@ export default function HomePage() {
         setIsTradingDay(!isWeekend);
         return;
       }
-      const currentStr = todayStr.replace(/-/g, '');
+      const currentStr = now.format('YYYYMMDD');
       if (dateStr === currentStr) {
         setIsTradingDay(true);
       } else {
@@ -2169,67 +2176,9 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  // 计算持仓收益
-  const getHoldingProfit = (fund, holding) => {
-    if (!holding || typeof holding.share !== 'number') return null;
-
-    const now = nowInTz();
-    const isAfter9 = now.hour() >= 9;
-    const hasTodayData = fund.jzrq === todayStr;
-    const hasTodayValuation = typeof fund.gztime === 'string' && fund.gztime.startsWith(todayStr);
-    const canCalcTodayProfit = hasTodayData || hasTodayValuation;
-
-    // 如果是交易日且9点以后，且今日净值未出，则强制使用估值（隐藏涨跌幅列模式）
-    const useValuation = isTradingDay && isAfter9 && !hasTodayData;
-
-    let currentNav;
-    let profitToday;
-
-    if (!useValuation) {
-      // 使用确权净值 (dwjz)
-      currentNav = Number(fund.dwjz);
-      if (!currentNav) return null;
-
-      if (canCalcTodayProfit) {
-        const amount = holding.share * currentNav;
-        // 优先用 zzl (真实涨跌幅), 降级用 gszzl
-        const rate = fund.zzl !== undefined ? Number(fund.zzl) : (Number(fund.gszzl) || 0);
-        profitToday = amount - (amount / (1 + rate / 100));
-      } else {
-        profitToday = null;
-      }
-    } else {
-      // 否则使用估值
-      currentNav = fund.estPricedCoverage > 0.05
-        ? fund.estGsz
-        : (typeof fund.gsz === 'number' ? fund.gsz : Number(fund.dwjz));
-
-      if (!currentNav) return null;
-
-      if (canCalcTodayProfit) {
-        const amount = holding.share * currentNav;
-        // 估值涨跌幅
-        const gzChange = fund.estPricedCoverage > 0.05 ? fund.estGszzl : (Number(fund.gszzl) || 0);
-        profitToday = amount - (amount / (1 + gzChange / 100));
-      } else {
-        profitToday = null;
-      }
-    }
-
-    // 持仓金额
-    const amount = holding.share * currentNav;
-
-    // 总收益 = (当前净值 - 成本价) * 份额
-    const profitTotal = typeof holding.cost === 'number'
-      ? (currentNav - holding.cost) * holding.share
-      : null;
-
-    return {
-      amount,
-      profitToday,
-      profitTotal
-    };
-  };
+  const getHoldingProfit = (fund, holding) => calculateHoldingProfit(fund, holding, {
+    today: todayStr, useValuation: isTradingDay && nowInTz().hour() >= 9,
+  });
 
 
   // 过滤和排序后的基金列表
@@ -3098,12 +3047,7 @@ export default function HomePage() {
           });
         } catch (e) {
           console.error(`刷新基金 ${c} 失败`, e);
-          // 失败时从当前 state 中寻找旧数据
-          setFunds(prev => {
-            const old = prev.find((f) => f.code === c);
-            if (old) updated.push(old);
-            return prev;
-          });
+          updated.push({ code: c, refreshError: true });
         }
       }
 
@@ -3114,8 +3058,8 @@ export default function HomePage() {
           updated.forEach(u => {
             const idx = merged.findIndex(f => f.code === u.code);
             if (idx > -1) {
-              merged[idx] = u;
-            } else {
+              merged[idx] = u.refreshError ? { ...merged[idx], refreshError: true } : u;
+            } else if (!u.refreshError) {
               merged.push(u);
             }
           });
@@ -4428,6 +4372,7 @@ export default function HomePage() {
                                       )}
                                     </div>
                                     <span className="muted code-text">#{f.code} · {(f.noValuation ? (f.jzrq || '-') : (f.gztime || f.time || '-')).replace(/^\d{4}-/, '')}</span>
+                                    <FundDataStatus fund={f} today={todayStr} />
                                   </div>
                                 </div>
                                 {(() => {
@@ -4442,7 +4387,7 @@ export default function HomePage() {
                                       <div className="table-cell text-right change-cell">
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
                                           <span className={f.zzl > 0 ? 'up' : f.zzl < 0 ? 'down' : ''} style={{ fontWeight: 700 }}>
-                                            {f.zzl !== undefined ? `${f.zzl > 0 ? '+' : ''}${Number(f.zzl).toFixed(2)}%` : ''}
+                                            {f.zzl !== undefined && f.zzl !== null ? `${f.zzl > 0 ? '+' : ''}${Number(f.zzl).toFixed(2)}%` : ''}
                                           </span>
                                           <span className="muted" style={{ fontSize: '10px', fontWeight: 500, opacity: 0.8 }}>{f.dwjz ?? '—'}</span>
                                         </div>
@@ -4619,6 +4564,7 @@ export default function HomePage() {
                                         )}
                                       </div>
                                       <span className="muted">#{f.code}</span>
+                                      <FundDataStatus fund={f} today={todayStr} />
                                     </div>
                                     </div>
                                   </div>
@@ -4655,7 +4601,7 @@ export default function HomePage() {
                                         label={showActual ? "实际涨跌幅" : "估值涨跌幅"}
                                         value={
                                           showActual
-                                            ? (f.zzl !== undefined ? `${f.zzl > 0 ? '+' : ''}${Number(f.zzl).toFixed(2)}%` : '—')
+                                            ? (f.zzl !== undefined && f.zzl !== null ? `${f.zzl > 0 ? '+' : ''}${Number(f.zzl).toFixed(2)}%` : '—')
                                             : (f.estPricedCoverage > 0.05 ? `${f.estGszzl > 0 ? '+' : ''}${f.estGszzl.toFixed(2)}%` : (typeof f.gszzl === 'number' ? `${f.gszzl > 0 ? '+' : ''}${f.gszzl.toFixed(2)}%` : f.gszzl ?? '—'))
                                         }
                                         delta={
@@ -4707,7 +4653,7 @@ export default function HomePage() {
                                         <div className="stat" style={{ flexDirection: 'column', gap: 4, alignItems: 'center' }}>
                                           <span className="label">当日盈亏</span>
                                           <span className={`value ${profit.profitToday > 0 ? 'up' : profit.profitToday < 0 ? 'down' : ''}`}>
-                                            {profit.profitToday > 0 ? '+' : profit.profitToday < 0 ? '-' : ''}¥{Math.abs(profit.profitToday).toFixed(2)}
+                                            {profit.profitToday === null ? '—' : `${profit.profitToday > 0 ? '+' : profit.profitToday < 0 ? '-' : ''}¥${Math.abs(profit.profitToday).toFixed(2)}`}
                                           </span>
                                         </div>
                                         {profit.profitTotal !== null && (
@@ -4963,7 +4909,7 @@ export default function HomePage() {
 
       <AnimatePresence>
         {donateOpen && (
-          <div className="modal-overlay" onClick={() => setDonateOpen(false)}>
+          <ModalBackdrop className="modal-overlay" onClick={() => setDonateOpen(false)}>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -4989,7 +4935,7 @@ export default function HomePage() {
                 感谢您的支持！您的鼓励是我持续维护和更新的动力。
               </div>
             </motion.div>
-          </div>
+          </ModalBackdrop>
         )}
       </AnimatePresence>
 
@@ -5037,7 +4983,7 @@ export default function HomePage() {
       </AnimatePresence>
 
       {settingsOpen && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="设置" onClick={() => setSettingsOpen(false)}>
+        <ModalBackdrop className="modal-overlay" role="dialog" aria-modal="true" aria-label="设置" onClick={() => setSettingsOpen(false)}>
           <div className="glass card modal" onClick={(e) => e.stopPropagation()}>
             <div className="title" style={{ marginBottom: 12 }}>
               <SettingsIcon width="20" height="20" />
@@ -5103,13 +5049,13 @@ export default function HomePage() {
               <button className="button" onClick={saveSettings} disabled={tempSeconds < 10}>保存并关闭</button>
             </div>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
 
       {/* 更新提示弹窗 */}
       <AnimatePresence>
         {updateModalOpen && (
-          <motion.div
+          <ModalBackdrop
             className="modal-overlay"
             role="dialog"
             aria-modal="true"
@@ -5171,13 +5117,13 @@ export default function HomePage() {
                 </button>
               </div>
             </motion.div>
-          </motion.div>
+          </ModalBackdrop>
         )}
       </AnimatePresence>
 
       {/* 登录模态框 */}
       {loginModalOpen && (
-        <div
+        <ModalBackdrop
           className="modal-overlay"
           role="dialog"
           aria-modal="true"
@@ -5277,7 +5223,7 @@ export default function HomePage() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
 
       {/* 全局轻提示 Toast */}
