@@ -2,22 +2,19 @@
 
 import { useEffect, useRef, useState, useMemo, useLayoutEffect, useCallback } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { createAvatar } from '@dicebear/core';
-import { glass } from '@dicebear/collection';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import BackupPanel from "./components/BackupPanel";
 import ModalBackdrop from "./components/ModalBackdrop";
 import FundDataStatus from "./components/FundDataStatus";
 import { getHoldingProfit as calculateHoldingProfit } from "./lib/holding-profit.js";
-import Announcement from "./components/Announcement";
 import FundTrendChart from "./components/FundTrendChart";
 import FundIntradayChart from "./components/FundIntradayChart";
 import { DatePicker, DonateTabs, NumericInput, Stat } from "./components/Common";
-import { ChevronIcon, CloseIcon, CloudIcon, DragIcon, EditIcon, ExitIcon, EyeIcon, EyeOffIcon, GridIcon, ListIcon, LoginIcon, LogoutIcon, MailIcon, MoonIcon, PinIcon, PinOffIcon, PlusIcon, RefreshIcon, SettingsIcon, SortIcon, StarIcon, SunIcon, SwitchIcon, TrashIcon, UpdateIcon, UserIcon } from "./components/Icons";
+import { ChevronIcon, CloseIcon, DragIcon, EditIcon, ExitIcon, EyeIcon, EyeOffIcon, GridIcon, ListIcon, MailIcon, MoonIcon, PinIcon, PinOffIcon, PlusIcon, RefreshIcon, SettingsIcon, SortIcon, StarIcon, SunIcon, SwitchIcon, TrashIcon, UpdateIcon, UserIcon } from "./components/Icons";
 import githubImg from "./assets/github.svg";
 import wxChatImg from "./assets/wxChat.jpeg";
-import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { fetchFundData, fetchIntradayData, fetchLatestRelease, fetchShanghaiIndexDate, fetchSmartFundNetValue, searchFunds, submitFeedback } from './api/fund';
 import packageJson from '../package.json';
 
@@ -30,7 +27,7 @@ const nowInTz = () => dayjs().tz(TZ);
 const toTz = (input) => (input ? dayjs.tz(input, TZ) : nowInTz());
 const formatDate = (input) => toTz(input).format('YYYY-MM-DD');
 
-function FeedbackModal({ onClose, user, onOpenWeChat }) {
+function FeedbackModal({ onClose, onOpenWeChat }) {
   const [submitting, setSubmitting] = useState(false);
   const [succeeded, setSucceeded] = useState(false);
   const [error, setError] = useState("");
@@ -116,7 +113,6 @@ function FeedbackModal({ onClose, user, onOpenWeChat }) {
                 style={{ width: '100%' }}
               />
             </div>
-            <input type="hidden" name="email" value={user?.email || ''} />
             <div className="form-group" style={{ marginBottom: 20 }}>
               <label htmlFor="message" className="muted" style={{ display: 'block', marginBottom: 8, fontSize: '14px' }}>
                 反馈内容
@@ -1334,56 +1330,6 @@ function SuccessModal({ message, onClose }) {
   );
 }
 
-function CloudConfigModal({ onConfirm, onCancel, type = 'empty' }) {
-  const isConflict = type === 'conflict';
-  return (
-    <ModalBackdrop
-      className="modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label={isConflict ? "配置冲突提示" : "云端同步提示"}
-      onClick={isConflict ? undefined : onCancel}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="glass card modal"
-        style={{ maxWidth: '420px' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="title" style={{ marginBottom: 12, justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <CloudIcon width="20" height="20" />
-            <span>{isConflict ? '发现配置冲突' : '云端暂无配置'}</span>
-          </div>
-          {!isConflict && (
-            <button className="icon-button" onClick={onCancel} style={{ border: 'none', background: 'transparent' }}>
-              <CloseIcon width="20" height="20" />
-            </button>
-          )}
-        </div>
-        <p className="muted" style={{ marginBottom: 20, fontSize: '14px', lineHeight: '1.6' }}>
-          {isConflict
-            ? '检测到本地配置与云端不一致，请选择操作：'
-            : '是否将本地配置同步到云端？'}
-        </p>
-        <div className="row" style={{ flexDirection: 'column', gap: 12 }}>
-          <button className="button" onClick={onConfirm}>
-            {isConflict ? '保留本地 (覆盖云端)' : '同步本地到云端'}
-          </button>
-          <button className="button secondary" onClick={onCancel}>
-            {isConflict ? '使用云端 (覆盖本地)' : '暂不同步'}
-          </button>
-        </div>
-      </motion.div>
-    </ModalBackdrop>
-  );
-}
-
 function ConfirmModal({ title, message, onConfirm, onCancel, confirmText = "确定删除" }) {
   return (
     <ModalBackdrop
@@ -1968,7 +1914,6 @@ export default function HomePage() {
   const [theme, setTheme] = useState('dark');
   const timerRef = useRef(null);
   const refreshingRef = useRef(false);
-  const isLoggingOutRef = useRef(false);
 
   // 刷新频率状态
   const [refreshMs, setRefreshMs] = useState(30000);
@@ -1996,24 +1941,6 @@ export default function HomePage() {
 
   // 视图模式
   const [viewMode, setViewMode] = useState('card'); // card, list
-
-  // 用户认证状态
-  const [user, setUser] = useState(null);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState('');
-  const [loginSuccess, setLoginSuccess] = useState('');
-  const [loginOtp, setLoginOtp] = useState('');
-
-  const userAvatar = useMemo(() => {
-    if (!user?.id) return '';
-    return createAvatar(glass, {
-      seed: user.id,
-      size: 80
-    }).toDataUri();
-  }, [user?.id]);
 
   // 反馈弹窗状态
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -2068,7 +1995,6 @@ export default function HomePage() {
   const todayStr = formatDate();
 
   const [isMobile, setIsMobile] = useState(false);
-  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const checkMobile = () => setIsMobile(window.innerWidth <= 640);
@@ -2082,7 +2008,6 @@ export default function HomePage() {
   const [hasUpdate, setHasUpdate] = useState(false);
   const [latestVersion, setLatestVersion] = useState('');
   const [updateContent, setUpdateContent] = useState('');
-  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     const checkUpdate = async () => {
@@ -2260,7 +2185,13 @@ export default function HomePage() {
     setClearConfirm(null);
   };
 
+  const [processingTrades, setProcessingTrades] = useState(false);
+  const processingTradesRef = useRef(false);
   const processPendingQueue = async () => {
+    if (processingTradesRef.current) return;
+    processingTradesRef.current = true;
+    setProcessingTrades(true);
+    try {
     const currentPending = pendingTradesRef.current;
     if (currentPending.length === 0) return;
 
@@ -2311,6 +2242,10 @@ export default function HomePage() {
       });
 
       showToast(`已处理 ${processedIds.size} 笔待定交易`, 'success');
+    }
+    } finally {
+      processingTradesRef.current = false;
+      setProcessingTrades(false);
     }
   };
 
@@ -2417,21 +2352,7 @@ export default function HomePage() {
     }, 3000);
   };
 
-  const handleOpenLogin = () => {
-    setUserMenuOpen(false);
-    if (!isSupabaseConfigured) {
-      showToast('未配置 Supabase，无法登录', 'error');
-      return;
-    }
-    setLoginModalOpen(true);
-  };
-
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
-  const [cloudConfigModal, setCloudConfigModal] = useState({ open: false, userId: null });
-  const syncDebounceRef = useRef(null);
-  const lastSyncedRef = useRef('');
-  const skipSyncRef = useRef(false);
-  const userIdRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -2443,88 +2364,10 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    userIdRef.current = user?.id || null;
-  }, [user]);
-
-  const getFundCodesSignature = useCallback((value) => {
-    try {
-      const list = JSON.parse(value || '[]');
-      if (!Array.isArray(list)) return '';
-      const codes = list.map((item) => item?.code).filter(Boolean);
-      return Array.from(new Set(codes)).sort().join('|');
-    } catch (e) {
-      return '';
-    }
-  }, []);
-
-  const scheduleSync = useCallback(() => {
-    if (!userIdRef.current) return;
-    if (skipSyncRef.current) return;
-    if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
-    syncDebounceRef.current = setTimeout(() => {
-      const payload = collectLocalPayload();
-      const next = getComparablePayload(payload);
-      if (next === lastSyncedRef.current) return;
-      lastSyncedRef.current = next;
-      syncUserConfig(userIdRef.current, false);
-    }, 2000);
-  }, []);
-
-  const storageHelper = useMemo(() => {
-    const keys = new Set(['funds', 'favorites', 'groups', 'collapsedCodes', 'refreshMs', 'holdings', 'pendingTrades', 'viewMode']);
-    const triggerSync = (key, prevValue, nextValue) => {
-      if (keys.has(key)) {
-        if (key === 'funds') {
-          const prevSig = getFundCodesSignature(prevValue);
-          const nextSig = getFundCodesSignature(nextValue);
-          if (prevSig === nextSig) return;
-        }
-        if (!skipSyncRef.current) {
-          window.localStorage.setItem('localUpdatedAt', nowInTz().toISOString());
-        }
-        scheduleSync();
-      }
-    };
-    return {
-      setItem: (key, value) => {
-        const prevValue = key === 'funds' ? window.localStorage.getItem(key) : null;
-        window.localStorage.setItem(key, value);
-        triggerSync(key, prevValue, value);
-      },
-      removeItem: (key) => {
-        const prevValue = key === 'funds' ? window.localStorage.getItem(key) : null;
-        window.localStorage.removeItem(key);
-        triggerSync(key, prevValue, null);
-      },
-      clear: () => {
-        window.localStorage.clear();
-        if (!skipSyncRef.current) {
-          window.localStorage.setItem('localUpdatedAt', nowInTz().toISOString());
-        }
-        scheduleSync();
-      }
-    };
-  }, [getFundCodesSignature, scheduleSync]);
-
-  useEffect(() => {
-    const keys = new Set(['funds', 'favorites', 'groups', 'collapsedCodes', 'refreshMs', 'holdings', 'pendingTrades', 'viewMode']);
-    const onStorage = (e) => {
-      if (!e.key) return;
-      if (!keys.has(e.key)) return;
-      if (e.key === 'funds') {
-        const prevSig = getFundCodesSignature(e.oldValue);
-        const nextSig = getFundCodesSignature(e.newValue);
-        if (prevSig === nextSig) return;
-      }
-      scheduleSync();
-    };
-    window.addEventListener('storage', onStorage);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
-    };
-  }, [getFundCodesSignature, scheduleSync]);
+  const storageHelper = useMemo(() => ({
+    setItem: (key, value) => window.localStorage.setItem(key, value),
+    removeItem: key => window.localStorage.removeItem(key),
+  }), []);
 
   const applyViewMode = useCallback((mode) => {
     if (mode !== 'card' && mode !== 'list') return;
@@ -2654,6 +2497,8 @@ export default function HomePage() {
         // 首次访问，添加默认基金 004253 (信达澳银新能源产业股票)
         const defaultCode = '004253';
         fetchFundData(defaultCode).then(data => {
+          // A JSON import may complete while the first default quote is loading.
+          if (localStorage.getItem('funds') !== null) return;
           setFunds([data]);
           storageHelper.setItem('funds', JSON.stringify([data]));
           fetchIntradayData(defaultCode).then(intra => {
@@ -2711,246 +2556,9 @@ export default function HomePage() {
     } catch { }
   }, []);
 
-  // 初始化认证状态监听
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setUser(null);
-      setUserMenuOpen(false);
-      return;
-    }
-    const clearAuthState = () => {
-      setUser(null);
-      setUserMenuOpen(false);
-    };
-
-    const handleSession = async (session, event) => {
-      if (!session?.user) {
-        if (event === 'SIGNED_OUT' && !isLoggingOutRef.current) {
-          setLoginError('会话已过期，请重新登录');
-          setLoginModalOpen(true);
-        }
-        isLoggingOutRef.current = false;
-        clearAuthState();
-        return;
-      }
-      if (session.expires_at && session.expires_at * 1000 <= Date.now()) {
-        isLoggingOutRef.current = true;
-        await supabase.auth.signOut({ scope: 'local' });
-        try {
-          const storageKeys = Object.keys(localStorage);
-          storageKeys.forEach((key) => {
-            if (key === 'supabase.auth.token' || (key.startsWith('sb-') && key.endsWith('-auth-token'))) {
-              storageHelper.removeItem(key);
-            }
-          });
-        } catch { }
-        try {
-          const sessionKeys = Object.keys(sessionStorage);
-          sessionKeys.forEach((key) => {
-            if (key === 'supabase.auth.token' || (key.startsWith('sb-') && key.endsWith('-auth-token'))) {
-              sessionStorage.removeItem(key);
-            }
-          });
-        } catch { }
-        clearAuthState();
-        setLoginError('会话已过期，请重新登录');
-        showToast('会话已过期，请重新登录', 'error');
-        setLoginModalOpen(true);
-        return;
-      }
-      setUser(session.user);
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        setLoginModalOpen(false);
-        setLoginEmail('');
-        setLoginSuccess('');
-        setLoginError('');
-      }
-      fetchCloudConfig(session.user.id);
-    };
-
-    supabase.auth.getSession().then(async ({ data, error }) => {
-      if (error) {
-        clearAuthState();
-        return;
-      }
-      await handleSession(data?.session ?? null, 'INITIAL_SESSION');
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      await handleSession(session ?? null, event);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured || !user?.id) return;
-    const channel = supabase
-      .channel(`user-configs-${user.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_configs', filter: `user_id=eq.${user.id}` }, async (payload) => {
-        const incoming = payload?.new?.data;
-        if (!incoming || typeof incoming !== 'object') return;
-        const incomingComparable = getComparablePayload(incoming);
-        if (!incomingComparable || incomingComparable === lastSyncedRef.current) return;
-        await applyCloudConfig(incoming, payload.new.updated_at);
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_configs', filter: `user_id=eq.${user.id}` }, async (payload) => {
-        const incoming = payload?.new?.data;
-        if (!incoming || typeof incoming !== 'object') return;
-        const incomingComparable = getComparablePayload(incoming);
-        if (!incomingComparable || incomingComparable === lastSyncedRef.current) return;
-        await applyCloudConfig(incoming, payload.new.updated_at);
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id]);
-
-  const handleSendOtp = async (e) => {
-    e.preventDefault();
-    setLoginError('');
-    setLoginSuccess('');
-    if (!isSupabaseConfigured) {
-      showToast('未配置 Supabase，无法登录', 'error');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!loginEmail.trim()) {
-      setLoginError('请输入邮箱地址');
-      return;
-    }
-    if (!emailRegex.test(loginEmail.trim())) {
-      setLoginError('请输入有效的邮箱地址');
-      return;
-    }
-
-    setLoginLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: loginEmail.trim(),
-        options: {
-          shouldCreateUser: true
-        }
-      });
-      if (error) throw error;
-      setLoginSuccess('验证码已发送，请查收邮箱输入验证码完成注册/登录');
-    } catch (err) {
-      if (err.message?.includes('rate limit')) {
-        setLoginError('请求过于频繁，请稍后再试');
-      } else if (err.message?.includes('network')) {
-        setLoginError('网络错误，请检查网络连接');
-      } else {
-        setLoginError(err.message || '发送验证码失败，请稍后再试');
-      }
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
-  const handleVerifyEmailOtp = async () => {
-    setLoginError('');
-    if (!loginOtp || loginOtp.length < 4) {
-      setLoginError('请输入邮箱中的验证码');
-      return;
-    }
-    if (!isSupabaseConfigured) {
-      showToast('未配置 Supabase，无法登录', 'error');
-      return;
-    }
-    try {
-      setLoginLoading(true);
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: loginEmail.trim(),
-        token: loginOtp.trim(),
-        type: 'email'
-      });
-      if (error) throw error;
-      if (data?.user) {
-        setLoginModalOpen(false);
-        setLoginEmail('');
-        setLoginOtp('');
-        setLoginSuccess('');
-        setLoginError('');
-        fetchCloudConfig(data.user.id);
-      }
-    } catch (err) {
-      setLoginError(err.message || '验证失败，请检查验证码或稍后再试');
-    }
-    setLoginLoading(false);
-  };
-
-  // 登出
-  const handleLogout = async () => {
-    isLoggingOutRef.current = true;
-    if (!isSupabaseConfigured) {
-      setLoginModalOpen(false);
-      setLoginError('');
-      setLoginSuccess('');
-      setLoginEmail('');
-      setLoginOtp('');
-      setUserMenuOpen(false);
-      setUser(null);
-      return;
-    }
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { error } = await supabase.auth.signOut({ scope: 'local' });
-        if (error && error.code !== 'session_not_found') {
-          throw error;
-        }
-      }
-    } catch (err) {
-      showToast(err.message, 'error')
-      console.error('登出失败', err);
-    } finally {
-      try {
-        await supabase.auth.signOut({ scope: 'local' });
-      } catch { }
-      try {
-        const storageKeys = Object.keys(localStorage);
-        storageKeys.forEach((key) => {
-          if (key === 'supabase.auth.token' || (key.startsWith('sb-') && key.endsWith('-auth-token'))) {
-            storageHelper.removeItem(key);
-          }
-        });
-      } catch { }
-      try {
-        const sessionKeys = Object.keys(sessionStorage);
-        sessionKeys.forEach((key) => {
-          if (key === 'supabase.auth.token' || (key.startsWith('sb-') && key.endsWith('-auth-token'))) {
-            sessionStorage.removeItem(key);
-          }
-        });
-      } catch { }
-      setLoginModalOpen(false);
-      setLoginError('');
-      setLoginSuccess('');
-      setLoginEmail('');
-      setLoginOtp('');
-      setUserMenuOpen(false);
-      setUser(null);
-    }
-  };
-
-  // 关闭用户菜单（点击外部时）
-  const userMenuRef = useRef(null);
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
-        setUserMenuOpen(false);
-      }
-    };
-    if (userMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [userMenuOpen]);
-
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (settingsOpen) return;
     timerRef.current = setInterval(() => {
       const codes = Array.from(new Set(funds.map((f) => f.code)));
       if (codes.length) refreshAll(codes);
@@ -2958,7 +2566,7 @@ export default function HomePage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [funds, refreshMs]);
+  }, [funds, refreshMs, settingsOpen]);
 
   const performSearch = async (val) => {
     if (!val.trim()) {
@@ -3211,486 +2819,19 @@ export default function HomePage() {
     setSettingsOpen(false);
   };
 
-  const importFileRef = useRef(null);
-  const [importMsg, setImportMsg] = useState('');
-
-  const normalizeCode = (value) => String(value || '').trim();
-  const normalizeNumber = (value) => {
-    if (value === null || value === undefined || value === '') return null;
-    const num = Number(value);
-    return Number.isFinite(num) ? num : null;
-  };
-
-  function getComparablePayload(payload) {
-    if (!payload || typeof payload !== 'object') return '';
-    const rawFunds = Array.isArray(payload.funds) ? payload.funds : [];
-    const fundCodes = rawFunds
-      .map((fund) => normalizeCode(fund?.code || fund?.CODE))
-      .filter(Boolean);
-    const uniqueFundCodes = Array.from(new Set(fundCodes)).sort();
-
-    const favorites = Array.isArray(payload.favorites)
-      ? Array.from(new Set(payload.favorites.map(normalizeCode).filter((code) => uniqueFundCodes.includes(code)))).sort()
-      : [];
-
-    const collapsedCodes = Array.isArray(payload.collapsedCodes)
-      ? Array.from(new Set(payload.collapsedCodes.map(normalizeCode).filter((code) => uniqueFundCodes.includes(code)))).sort()
-      : [];
-
-    const groups = Array.isArray(payload.groups)
-      ? payload.groups
-          .map((group) => {
-            const id = normalizeCode(group?.id);
-            if (!id) return null;
-            const name = typeof group?.name === 'string' ? group.name : '';
-            const codes = Array.isArray(group?.codes)
-              ? Array.from(new Set(group.codes.map(normalizeCode).filter((code) => uniqueFundCodes.includes(code)))).sort()
-              : [];
-            return { id, name, codes };
-          })
-          .filter(Boolean)
-          .sort((a, b) => a.id.localeCompare(b.id))
-      : [];
-
-    const holdingsSource = payload.holdings && typeof payload.holdings === 'object' && !Array.isArray(payload.holdings)
-      ? payload.holdings
-      : {};
-    const holdings = {};
-    Object.keys(holdingsSource)
-      .map(normalizeCode)
-      .filter((code) => uniqueFundCodes.includes(code))
-      .sort()
-      .forEach((code) => {
-        const value = holdingsSource[code] || {};
-        const share = normalizeNumber(value.share);
-        const cost = normalizeNumber(value.cost);
-        if (share === null && cost === null) return;
-        holdings[code] = { share, cost };
-      });
-
-    const pendingTrades = Array.isArray(payload.pendingTrades)
-      ? payload.pendingTrades
-          .map((trade) => {
-            const fundCode = normalizeCode(trade?.fundCode);
-            if (!fundCode) return null;
-            return {
-              id: trade?.id ? String(trade.id) : '',
-              fundCode,
-              type: trade?.type || '',
-              share: normalizeNumber(trade?.share),
-              amount: normalizeNumber(trade?.amount),
-              feeRate: normalizeNumber(trade?.feeRate),
-              feeMode: trade?.feeMode || '',
-              feeValue: normalizeNumber(trade?.feeValue),
-              date: trade?.date || '',
-              isAfter3pm: !!trade?.isAfter3pm
-            };
-          })
-          .filter((trade) => trade && uniqueFundCodes.includes(trade.fundCode))
-          .sort((a, b) => {
-            const keyA = a.id || `${a.fundCode}|${a.type}|${a.date}|${a.share ?? ''}|${a.amount ?? ''}|${a.feeMode}|${a.feeValue ?? ''}|${a.feeRate ?? ''}|${a.isAfter3pm ? 1 : 0}`;
-            const keyB = b.id || `${b.fundCode}|${b.type}|${b.date}|${b.share ?? ''}|${b.amount ?? ''}|${b.feeMode}|${b.feeValue ?? ''}|${b.feeRate ?? ''}|${b.isAfter3pm ? 1 : 0}`;
-            return keyA.localeCompare(keyB);
-          })
-      : [];
-
-    const viewMode = payload.viewMode === 'list' ? 'list' : 'card';
-
-    return JSON.stringify({
-      funds: uniqueFundCodes,
-      favorites,
-      groups,
-      collapsedCodes,
-      refreshMs: Number.isFinite(payload.refreshMs) ? payload.refreshMs : 30000,
-      holdings,
-      pendingTrades,
-      viewMode
-    });
-  }
-
-  const collectLocalPayload = () => {
-    try {
-      const funds = JSON.parse(localStorage.getItem('funds') || '[]');
-      const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-      const groups = JSON.parse(localStorage.getItem('groups') || '[]');
-      const collapsedCodes = JSON.parse(localStorage.getItem('collapsedCodes') || '[]');
-      const viewMode = localStorage.getItem('viewMode') === 'list' ? 'list' : 'card';
-      const fundCodes = new Set(
-        Array.isArray(funds)
-          ? funds.map((f) => f?.code).filter(Boolean)
-          : []
-      );
-      const holdings = JSON.parse(localStorage.getItem('holdings') || '{}');
-      const pendingTrades = JSON.parse(localStorage.getItem('pendingTrades') || '[]');
-      const cleanedHoldings = holdings && typeof holdings === 'object' && !Array.isArray(holdings)
-        ? Object.entries(holdings).reduce((acc, [code, value]) => {
-          if (!fundCodes.has(code) || !value || typeof value !== 'object') return acc;
-          const parsedShare = typeof value.share === 'number'
-            ? value.share
-            : typeof value.share === 'string'
-              ? Number(value.share)
-              : NaN;
-          const parsedCost = typeof value.cost === 'number'
-            ? value.cost
-            : typeof value.cost === 'string'
-              ? Number(value.cost)
-              : NaN;
-          const nextShare = Number.isFinite(parsedShare) ? parsedShare : null;
-          const nextCost = Number.isFinite(parsedCost) ? parsedCost : null;
-          if (nextShare === null && nextCost === null) return acc;
-          acc[code] = {
-            ...value,
-            share: nextShare,
-            cost: nextCost
-          };
-          return acc;
-        }, {})
-        : {};
-      const cleanedFavorites = Array.isArray(favorites)
-        ? favorites.filter((code) => fundCodes.has(code))
-        : [];
-      const cleanedCollapsed = Array.isArray(collapsedCodes)
-        ? collapsedCodes.filter((code) => fundCodes.has(code))
-        : [];
-      const cleanedGroups = Array.isArray(groups)
-        ? groups.map((group) => ({
-          ...group,
-          codes: Array.isArray(group?.codes)
-            ? group.codes.filter((code) => fundCodes.has(code))
-            : []
-        }))
-        : [];
-      const cleanedPendingTrades = Array.isArray(pendingTrades)
-        ? pendingTrades.filter((trade) => trade && fundCodes.has(trade.fundCode))
-        : [];
-      return {
-        funds,
-        favorites: cleanedFavorites,
-        groups: cleanedGroups,
-        collapsedCodes: cleanedCollapsed,
-        refreshMs: parseInt(localStorage.getItem('refreshMs') || '30000', 10),
-        holdings: cleanedHoldings,
-        pendingTrades: cleanedPendingTrades,
-        viewMode,
-        exportedAt: nowInTz().toISOString()
-      };
-    } catch {
-      return {
-        funds: [],
-        favorites: [],
-        groups: [],
-        collapsedCodes: [],
-        refreshMs: 30000,
-        holdings: {},
-        pendingTrades: [],
-        viewMode: 'card',
-        exportedAt: nowInTz().toISOString()
-      };
-    }
-  };
-
-  const applyCloudConfig = async (cloudData, cloudUpdatedAt) => {
-    if (!cloudData || typeof cloudData !== 'object') return;
-    skipSyncRef.current = true;
-    try {
-      if (cloudUpdatedAt) {
-        storageHelper.setItem('localUpdatedAt', toTz(cloudUpdatedAt).toISOString());
-      }
-      const nextFunds = Array.isArray(cloudData.funds) ? dedupeByCode(cloudData.funds) : [];
-      setFunds(nextFunds);
-      storageHelper.setItem('funds', JSON.stringify(nextFunds));
-      const nextFundCodes = new Set(nextFunds.map((f) => f.code));
-
-      const nextFavorites = Array.isArray(cloudData.favorites) ? cloudData.favorites : [];
-      setFavorites(new Set(nextFavorites));
-      storageHelper.setItem('favorites', JSON.stringify(nextFavorites));
-
-      const nextGroups = Array.isArray(cloudData.groups) ? cloudData.groups : [];
-      setGroups(nextGroups);
-      storageHelper.setItem('groups', JSON.stringify(nextGroups));
-
-      const nextCollapsed = Array.isArray(cloudData.collapsedCodes) ? cloudData.collapsedCodes : [];
-      setCollapsedCodes(new Set(nextCollapsed));
-      storageHelper.setItem('collapsedCodes', JSON.stringify(nextCollapsed));
-
-      const nextRefreshMs = Number.isFinite(cloudData.refreshMs) && cloudData.refreshMs >= 5000 ? cloudData.refreshMs : 30000;
-      setRefreshMs(nextRefreshMs);
-      setTempSeconds(Math.round(nextRefreshMs / 1000));
-      storageHelper.setItem('refreshMs', String(nextRefreshMs));
-
-      if (cloudData.viewMode === 'card' || cloudData.viewMode === 'list') {
-        applyViewMode(cloudData.viewMode);
-      }
-
-      const nextHoldings = cloudData.holdings && typeof cloudData.holdings === 'object' ? cloudData.holdings : {};
-      setHoldings(nextHoldings);
-      storageHelper.setItem('holdings', JSON.stringify(nextHoldings));
-
-      const nextPendingTrades = Array.isArray(cloudData.pendingTrades)
-        ? cloudData.pendingTrades.filter((trade) => trade && nextFundCodes.has(trade.fundCode))
-        : [];
-      setPendingTrades(nextPendingTrades);
-      storageHelper.setItem('pendingTrades', JSON.stringify(nextPendingTrades));
-
-      if (nextFunds.length) {
-        const codes = Array.from(new Set(nextFunds.map((f) => f.code)));
-        if (codes.length) await refreshAll(codes);
-      }
-
-      const payload = collectLocalPayload();
-      lastSyncedRef.current = getComparablePayload(payload);
-    } finally {
-      skipSyncRef.current = false;
-    }
-  };
-
-  const fetchCloudConfig = async (userId) => {
-    if (!userId) return;
-    try {
-      const { data, error } = await supabase
-        .from('user_configs')
-        .select('id, data, updated_at')
-        .eq('user_id', userId)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data?.id) {
-        const { error: insertError } = await supabase
-          .from('user_configs')
-          .insert({ user_id: userId });
-        if (insertError) throw insertError;
-        setCloudConfigModal({ open: true, userId, type: 'empty' });
-        return;
-      }
-      if (data?.data && typeof data.data === 'object' && Object.keys(data.data).length > 0) {
-        const localPayload = collectLocalPayload();
-        const localComparable = getComparablePayload(localPayload);
-        const cloudComparable = getComparablePayload(data.data);
-
-        if (localComparable !== cloudComparable) {
-          // 如果数据不一致，无论时间戳如何，都提示用户
-          // 用户可以选择使用本地数据覆盖云端，或者使用云端数据覆盖本地
-          setCloudConfigModal({ open: true, userId, type: 'conflict', cloudData: data.data });
-          return;
-        }
-
-        await applyCloudConfig(data.data, data.updated_at);
-        return;
-      }
-      setCloudConfigModal({ open: true, userId, type: 'empty' });
-    } catch (e) {
-      console.error('获取云端配置失败', e);
-    }
-  };
-
-  const syncUserConfig = async (userId, showTip = true) => {
-    if (!userId) {
-      showToast(`userId 不存在，请重新登录`, 'error');
-      return;
-    }
-    try {
-      setIsSyncing(true);
-      const payload = collectLocalPayload();
-      const now = nowInTz().toISOString();
-      const { data: upsertData, error: updateError } = await supabase
-        .from('user_configs')
-        .upsert(
-          {
-            user_id: userId,
-            data: payload,
-            updated_at: now
-          },
-          { onConflict: 'user_id' }
-        )
-        .select();
-
-      if (updateError) throw updateError;
-      if (!upsertData || upsertData.length === 0) {
-        throw new Error('同步失败：未写入任何数据，请检查账号状态或重新登录');
-      }
-
-      storageHelper.setItem('localUpdatedAt', now);
-
-      if (showTip) {
-        setSuccessModal({ open: true, message: '已同步云端配置' });
-      }
-    } catch (e) {
-      console.error('同步云端配置异常', e);
-      // 临时关闭同步异常提示
-      // showToast(`同步云端配置异常:${e}`, 'error');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const handleSyncLocalConfig = async () => {
-    const userId = cloudConfigModal.userId;
-    setCloudConfigModal({ open: false, userId: null });
-    await syncUserConfig(userId);
-  };
-
-  const exportLocalData = async () => {
-    try {
-      const payload = {
-        funds: JSON.parse(localStorage.getItem('funds') || '[]'),
-        favorites: JSON.parse(localStorage.getItem('favorites') || '[]'),
-        groups: JSON.parse(localStorage.getItem('groups') || '[]'),
-        collapsedCodes: JSON.parse(localStorage.getItem('collapsedCodes') || '[]'),
-        refreshMs: parseInt(localStorage.getItem('refreshMs') || '30000', 10),
-        viewMode: localStorage.getItem('viewMode') === 'list' ? 'list' : 'card',
-        holdings: JSON.parse(localStorage.getItem('holdings') || '{}'),
-        pendingTrades: JSON.parse(localStorage.getItem('pendingTrades') || '[]'),
-        exportedAt: nowInTz().toISOString()
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      if (window.showSaveFilePicker) {
-        const handle = await window.showSaveFilePicker({
-          suggestedName: `realtime-fund-config-${Date.now()}.json`,
-          types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
-        });
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        setSuccessModal({ open: true, message: '导出成功' });
-        setSettingsOpen(false);
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `realtime-fund-config-${Date.now()}.json`;
-      let done = false;
-      const finish = () => {
-        if (done) return;
-        done = true;
-        URL.revokeObjectURL(url);
-        setSuccessModal({ open: true, message: '导出成功' });
-        setSettingsOpen(false);
-      };
-      const onVisibility = () => {
-        if (document.visibilityState === 'hidden') return;
-        finish();
-        document.removeEventListener('visibilitychange', onVisibility);
-      };
-      document.addEventListener('visibilitychange', onVisibility, { once: true });
-      a.click();
-      setTimeout(finish, 3000);
-    } catch (err) {
-      console.error('Export error:', err);
-    }
-  };
-
-  const handleImportFileChange = async (e) => {
-    try {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const text = await file.text();
-      const data = JSON.parse(text);
-      if (data && typeof data === 'object') {
-        // 从 localStorage 读取最新数据进行合并，防止状态滞后导致的数据丢失
-        const currentFunds = JSON.parse(localStorage.getItem('funds') || '[]');
-        const currentFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-        const currentGroups = JSON.parse(localStorage.getItem('groups') || '[]');
-        const currentCollapsed = JSON.parse(localStorage.getItem('collapsedCodes') || '[]');
-        const currentPendingTrades = JSON.parse(localStorage.getItem('pendingTrades') || '[]');
-
-        let mergedFunds = currentFunds;
-        let appendedCodes = [];
-
-        if (Array.isArray(data.funds)) {
-          const incomingFunds = dedupeByCode(data.funds);
-          const existingCodes = new Set(currentFunds.map(f => f.code));
-          const newItems = incomingFunds.filter(f => f && f.code && !existingCodes.has(f.code));
-          appendedCodes = newItems.map(f => f.code);
-          mergedFunds = [...currentFunds, ...newItems];
-          setFunds(mergedFunds);
-          storageHelper.setItem('funds', JSON.stringify(mergedFunds));
-        }
-
-        if (Array.isArray(data.favorites)) {
-          const mergedFav = Array.from(new Set([...currentFavorites, ...data.favorites]));
-          setFavorites(new Set(mergedFav));
-          storageHelper.setItem('favorites', JSON.stringify(mergedFav));
-        }
-
-        if (Array.isArray(data.groups)) {
-          // 合并分组：如果 ID 相同则合并 codes，否则添加新分组
-          const mergedGroups = [...currentGroups];
-          data.groups.forEach(incomingGroup => {
-            const existingIdx = mergedGroups.findIndex(g => g.id === incomingGroup.id);
-            if (existingIdx > -1) {
-              mergedGroups[existingIdx] = {
-                ...mergedGroups[existingIdx],
-                codes: Array.from(new Set([...mergedGroups[existingIdx].codes, ...(incomingGroup.codes || [])]))
-              };
-            } else {
-              mergedGroups.push(incomingGroup);
-            }
-          });
-          setGroups(mergedGroups);
-          storageHelper.setItem('groups', JSON.stringify(mergedGroups));
-        }
-
-        if (Array.isArray(data.collapsedCodes)) {
-          const mergedCollapsed = Array.from(new Set([...currentCollapsed, ...data.collapsedCodes]));
-          setCollapsedCodes(new Set(mergedCollapsed));
-          storageHelper.setItem('collapsedCodes', JSON.stringify(mergedCollapsed));
-        }
-
-        if (typeof data.refreshMs === 'number' && data.refreshMs >= 5000) {
-          setRefreshMs(data.refreshMs);
-          setTempSeconds(Math.round(data.refreshMs / 1000));
-          storageHelper.setItem('refreshMs', String(data.refreshMs));
-        }
-        if (data.viewMode === 'card' || data.viewMode === 'list') {
-          applyViewMode(data.viewMode);
-        }
-
-        if (data.holdings && typeof data.holdings === 'object') {
-          const mergedHoldings = { ...JSON.parse(localStorage.getItem('holdings') || '{}'), ...data.holdings };
-          setHoldings(mergedHoldings);
-          storageHelper.setItem('holdings', JSON.stringify(mergedHoldings));
-        }
-
-        if (Array.isArray(data.pendingTrades)) {
-          const existingPending = Array.isArray(currentPendingTrades) ? currentPendingTrades : [];
-          const incomingPending = data.pendingTrades.filter((trade) => trade && trade.fundCode);
-          const fundCodeSet = new Set(mergedFunds.map((f) => f.code));
-          const keyOf = (trade) => {
-            if (trade?.id) return `id:${trade.id}`;
-            return `k:${trade?.fundCode || ''}:${trade?.type || ''}:${trade?.date || ''}:${trade?.share || ''}:${trade?.amount || ''}:${trade?.isAfter3pm ? 1 : 0}`;
-          };
-          const mergedPendingMap = new Map();
-          existingPending.forEach((trade) => {
-            if (!trade || !fundCodeSet.has(trade.fundCode)) return;
-            mergedPendingMap.set(keyOf(trade), trade);
-          });
-          incomingPending.forEach((trade) => {
-            if (!fundCodeSet.has(trade.fundCode)) return;
-            mergedPendingMap.set(keyOf(trade), trade);
-          });
-          const mergedPending = Array.from(mergedPendingMap.values());
-          setPendingTrades(mergedPending);
-          storageHelper.setItem('pendingTrades', JSON.stringify(mergedPending));
-        }
-
-        // 导入成功后，仅刷新新追加的基金
-        if (appendedCodes.length) {
-          // 这里需要确保 refreshAll 不会因为闭包问题覆盖掉刚刚合并好的 mergedFunds
-          // 我们直接传入所有代码执行一次全量刷新是最稳妥的，或者修改 refreshAll 支持增量更新
-          const allCodes = mergedFunds.map(f => f.code);
-          await refreshAll(allCodes);
-        }
-
-        setSuccessModal({ open: true, message: '导入成功' });
-        setSettingsOpen(false); // 导入成功自动关闭设置弹框
-        if (importFileRef.current) importFileRef.current.value = '';
-      }
-    } catch (err) {
-      console.error('Import error:', err);
-      setImportMsg('导入失败，请检查文件格式');
-      setTimeout(() => setImportMsg(''), 4000);
-      if (importFileRef.current) importFileRef.current.value = '';
-    }
+  const applyImportedData = data => {
+    setFunds(data.funds);
+    setFavorites(new Set(data.favorites));
+    setGroups(data.groups);
+    setCollapsedCodes(new Set(data.collapsedCodes));
+    setHoldings(data.holdings);
+    holdingsRef.current = data.holdings;
+    setPendingTrades(data.pendingTrades);
+    pendingTradesRef.current = data.pendingTrades;
+    setRefreshMs(data.refreshMs);
+    setTempSeconds(data.refreshMs / 1000);
+    setViewMode(data.viewMode);
+    setCurrentTab('all');
   };
 
   useEffect(() => {
@@ -3702,8 +2843,6 @@ export default function HomePage() {
       groupManageOpen ||
       groupModalOpen ||
       successModal.open ||
-      cloudConfigModal.open ||
-      logoutConfirmOpen ||
       holdingModal.open ||
       actionModal.open ||
       topStocksModal.open ||
@@ -3731,8 +2870,6 @@ export default function HomePage() {
     groupManageOpen,
     groupModalOpen,
     successModal.open,
-    cloudConfigModal.open,
-    logoutConfirmOpen,
     holdingModal.open,
     actionModal.open,
     topStocksModal.open,
@@ -3760,7 +2897,6 @@ export default function HomePage() {
 
   return (
     <div className="container content">
-      <Announcement />
       <div className="navbar glass">
         {refreshing && <div className="loading-bar"></div>}
         <div className="brand">
@@ -3769,35 +2905,6 @@ export default function HomePage() {
             <path d="M5 14c2-4 7-6 14-5" stroke="var(--primary)" strokeWidth="2" />
           </svg>
           <span>养基小宝</span>
-          <AnimatePresence>
-            {isSyncing && (
-              <motion.div
-                key="sync-icon"
-                initial={{ opacity: 0, width: 0, marginLeft: 0 }}
-                animate={{ opacity: 1, width: 'auto', marginLeft: 8 }}
-                exit={{ opacity: 0, width: 0, marginLeft: 0 }}
-                style={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}
-                title="正在同步到云端..."
-              >
-                <motion.svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                >
-                  <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" stroke="var(--primary)" />
-                  <path d="M12 12v9" stroke="var(--accent)" />
-                  <path d="m16 16-4-4-4 4" stroke="var(--accent)" />
-                </motion.svg>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
         <div className="actions">
           {hasUpdate && (
@@ -3833,116 +2940,9 @@ export default function HomePage() {
           >
             <RefreshIcon className={refreshing ? 'spin' : ''} width="18" height="18" />
           </button>
-          {/*<button*/}
-          {/*  className="icon-button"*/}
-          {/*  aria-label="打开设置"*/}
-          {/*  onClick={() => setSettingsOpen(true)}*/}
-          {/*  title="设置"*/}
-          {/*  hidden*/}
-          {/*>*/}
-          {/*  <SettingsIcon width="18" height="18" />*/}
-          {/*</button>*/}
-          {/* 用户菜单 */}
-          <div className="user-menu-container" ref={userMenuRef}>
-            <button
-              className={`icon-button user-menu-trigger ${user ? 'logged-in' : ''}`}
-              aria-label={user ? '用户菜单' : '登录'}
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              title={user ? (user.email || '用户') : '用户菜单'}
-            >
-              {user ? (
-                <div className="user-avatar-small">
-                  {userAvatar ? (
-                    <img
-                      src={userAvatar}
-                      alt="用户头像"
-                      style={{ width: '100%', height: '100%', borderRadius: '50%' }}
-                    />
-                  ) : (
-                    (user.email?.charAt(0).toUpperCase() || 'U')
-                  )}
-                </div>
-              ) : (
-                <UserIcon width="18" height="18" />
-              )}
-            </button>
-
-            <AnimatePresence>
-              {userMenuOpen && (
-                <motion.div
-                  className="user-menu-dropdown glass"
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  style={{ transformOrigin: 'top right' }}
-                >
-                  {user ? (
-                    <>
-                      <div className="user-menu-header">
-                        <div className="user-avatar-large">
-                          {userAvatar ? (
-                            <img
-                              src={userAvatar}
-                              alt="用户头像"
-                              style={{ width: '100%', height: '100%', borderRadius: '50%' }}
-                            />
-                          ) : (
-                            (user.email?.charAt(0).toUpperCase() || 'U')
-                          )}
-                        </div>
-                        <div className="user-info">
-                          <span className="user-email">{user.email}</span>
-                          <span className="user-status">已登录</span>
-                        </div>
-                      </div>
-                      <div className="user-menu-divider" />
-                      <button
-                        className="user-menu-item"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          setSettingsOpen(true);
-                        }}
-                      >
-                        <SettingsIcon width="16" height="16" />
-                        <span>设置</span>
-                      </button>
-                      <button
-                        className="user-menu-item danger"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          setLogoutConfirmOpen(true);
-                        }}
-                      >
-                        <LogoutIcon width="16" height="16" />
-                        <span>登出</span>
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        className="user-menu-item"
-                        onClick={handleOpenLogin}
-                      >
-                        <LoginIcon width="16" height="16" />
-                        <span>登录</span>
-                      </button>
-                      <button
-                        className="user-menu-item"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          setSettingsOpen(true);
-                        }}
-                      >
-                        <SettingsIcon width="16" height="16" />
-                        <span>设置</span>
-                      </button>
-                    </>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <button className="icon-button" aria-label="打开设置" title="设置" onClick={() => setSettingsOpen(true)}>
+            <SettingsIcon width="18" height="18" />
+          </button>
         </div>
       </div>
 
@@ -4745,25 +3745,10 @@ export default function HomePage() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {logoutConfirmOpen && (
-          <ConfirmModal
-            title="确认登出"
-            message="确定要退出当前账号吗？"
-            confirmText="确认登出"
-            onConfirm={() => {
-              setLogoutConfirmOpen(false);
-              handleLogout();
-            }}
-            onCancel={() => setLogoutConfirmOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
       <div className="footer">
         <p style={{ marginBottom: 8 }}>数据源：实时估值与重仓直连东方财富，仅供个人学习及参考使用，不作为任何投资建议</p>
         <div style={{ marginBottom: '12px' }}>
-          提示：不登陆个人数据保存在个人浏览器中，登陆后数据将保存在线上数据库
+          数据保存在当前浏览器，可通过设置中的 JSON 导出、导入进行备份和迁移。
         </div>
         <div style={{ marginTop: 12, opacity: 0.8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <div style={{ margin: 0 }}>
@@ -4814,7 +3799,6 @@ export default function HomePage() {
           <FeedbackModal
             key={feedbackNonce}
             onClose={() => setFeedbackOpen(false)}
-            user={user}
             onOpenWeChat={() => setWeChatOpen(true)}
           />
         )}
@@ -4967,28 +3951,13 @@ export default function HomePage() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {cloudConfigModal.open && (
-          <CloudConfigModal
-            type={cloudConfigModal.type}
-            onConfirm={handleSyncLocalConfig}
-            onCancel={() => {
-              if (cloudConfigModal.type === 'conflict' && cloudConfigModal.cloudData) {
-                applyCloudConfig(cloudConfigModal.cloudData);
-              }
-              setCloudConfigModal({ open: false, userId: null });
-            }}
-          />
-        )}
-      </AnimatePresence>
-
       {settingsOpen && (
         <ModalBackdrop className="modal-overlay" role="dialog" aria-modal="true" aria-label="设置" onClick={() => setSettingsOpen(false)}>
-          <div className="glass card modal" onClick={(e) => e.stopPropagation()}>
+          <div className="glass card modal" style={{ maxHeight: '88vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <div className="title" style={{ marginBottom: 12 }}>
               <SettingsIcon width="20" height="20" />
               <span>设置</span>
-              <span className="muted">配置刷新频率</span>
+              <span className="muted">刷新频率与数据备份</span>
             </div>
 
             <div className="form-group" style={{ marginBottom: 16 }}>
@@ -5022,28 +3991,7 @@ export default function HomePage() {
               )}
             </div>
 
-            <div className="form-group" style={{ marginBottom: 16 }}>
-              <div className="muted" style={{ marginBottom: 8, fontSize: '0.8rem' }}>数据导出</div>
-              <div className="row" style={{ gap: 8 }}>
-                <button type="button" className="button" onClick={exportLocalData}>导出配置</button>
-              </div>
-              <div className="muted" style={{ marginBottom: 8, fontSize: '0.8rem', marginTop: 26 }}>数据导入</div>
-              <div className="row" style={{ gap: 8, marginTop: 8 }}>
-                <button type="button" className="button" onClick={() => importFileRef.current?.click?.()}>导入配置</button>
-              </div>
-              <input
-                ref={importFileRef}
-                type="file"
-                accept="application/json"
-                style={{ display: 'none' }}
-                onChange={handleImportFileChange}
-              />
-              {importMsg && (
-                <div className="muted" style={{ marginTop: 8 }}>
-                  {importMsg}
-                </div>
-              )}
-            </div>
+            <BackupPanel onApplied={applyImportedData} busy={refreshing || loading || processingTrades} />
 
             <div className="row" style={{ justifyContent: 'flex-end', marginTop: 24 }}>
               <button className="button" onClick={saveSettings} disabled={tempSeconds < 10}>保存并关闭</button>
@@ -5120,111 +4068,6 @@ export default function HomePage() {
           </ModalBackdrop>
         )}
       </AnimatePresence>
-
-      {/* 登录模态框 */}
-      {loginModalOpen && (
-        <ModalBackdrop
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="登录"
-          onClick={() => {
-            setLoginModalOpen(false);
-            setLoginError('');
-            setLoginSuccess('');
-            setLoginEmail('');
-          }}
-        >
-          <div className="glass card modal login-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="title" style={{ marginBottom: 16 }}>
-              <MailIcon width="20" height="20" />
-              <span>邮箱登录</span>
-              <span className="muted">使用邮箱验证登录</span>
-            </div>
-
-            <form onSubmit={handleSendOtp}>
-              <div className="form-group" style={{ marginBottom: 16 }}>
-                <div style={{
-                  marginBottom: 12,
-                  padding: '8px 12px',
-                  background: 'rgba(230, 162, 60, 0.1)',
-                  border: '1px solid rgba(230, 162, 60, 0.2)',
-                  borderRadius: '4px',
-                  fontSize: '0.8rem',
-                  color: '#e6a23c',
-                  lineHeight: '1.4'
-                }}>
-                  ⚠️ 登录功能目前正在测试，使用过程中如遇到问题欢迎大家在 <a href="https://github.com/zhengshengning/fund-baby/issues" target="_blank" style={{ textDecoration: 'underline', color: 'inherit' }}>Github</a> 上反馈
-                </div>
-                <div className="muted" style={{ marginBottom: 8, fontSize: '0.8rem' }}>
-                  请输入邮箱，我们将发送验证码到您的邮箱
-                </div>
-                <input
-                  style={{width: '100%'}}
-                  className="input"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  disabled={loginLoading || !!loginSuccess}
-                />
-              </div>
-
-              {loginSuccess && (
-                <div className="login-message success" style={{ marginBottom: 12 }}>
-                  <span>{loginSuccess}</span>
-                </div>
-              )}
-
-              {loginSuccess && (
-                <div className="form-group" style={{ marginBottom: 16 }}>
-                  <div className="muted" style={{ marginBottom: 8, fontSize: '0.8rem' }}>
-                    请输入邮箱验证码以完成注册/登录
-                  </div>
-                  <input
-                    className="input"
-                    type="text"
-                    placeholder="输入验证码"
-                    value={loginOtp}
-                    onChange={(e) => setLoginOtp(e.target.value)}
-                    disabled={loginLoading}
-                    maxLength={8}
-                  />
-                </div>
-              )}
-              {loginError && (
-                <div className="login-message error" style={{ marginBottom: 12 }}>
-                  <span>{loginError}</span>
-                </div>
-              )}
-              <div className="row" style={{ justifyContent: 'flex-end', gap: 12 }}>
-                <button
-                  type="button"
-                  className="button secondary"
-                  onClick={() => {
-                    setLoginModalOpen(false);
-                    setLoginError('');
-                    setLoginSuccess('');
-                    setLoginEmail('');
-                    setLoginOtp('');
-                  }}
-                  disabled={loginLoading}
-                >
-                  取消
-                </button>
-                <button
-                  className="button"
-                  type={loginSuccess ? 'button' : 'submit'}
-                  onClick={loginSuccess ? handleVerifyEmailOtp : undefined}
-                  disabled={loginLoading || (loginSuccess && !loginOtp)}
-                >
-                  {loginLoading ? '处理中...' : loginSuccess ? '确认验证码' : '发送邮箱验证码'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </ModalBackdrop>
-      )}
 
       {/* 全局轻提示 Toast */}
       <AnimatePresence>
