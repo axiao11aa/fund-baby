@@ -2917,7 +2917,7 @@ export default function HomePage() {
               <UpdateIcon width="14" height="14" />
             </div>
           )}
-          <a href="https://github.com/axiao11aa" target="_blank" rel="noopener noreferrer" aria-label="打开 axiao11aa 的 GitHub 主页" title="我的 GitHub 主页" style={{ display: 'flex' }}>
+          <a href="https://github.com/axiao11aa/fund-baby" target="_blank" rel="noopener noreferrer" aria-label="打开 fund-baby 项目仓库" title="项目 GitHub 仓库" style={{ display: 'flex' }}>
             <img alt="GitHub" src={githubImg.src} style={{ width: '30px', height: '30px' }} />
           </a>
           <button
